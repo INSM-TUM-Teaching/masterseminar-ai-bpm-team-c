@@ -31,15 +31,14 @@ This project implements an advanced hospital optimization system for the **Busin
 
 ### Ultimate Optimization Planner vs Baseline Performance
 
-| **Performance Metric** | **Baseline** | **Ultimate Planner** | **Improvement** | **Impact** |
-|------------------------|--------------|---------------------|-----------------|------------|
-| **⏱️ Waiting Time for Admission (WTA)** | 402,173 hours | 241,304 hours | **40.0% ↓** | Faster patient access |
-| **🏥 Waiting Time in Hospital (WTH)** | 5,076,735 hours | 2,030,694 hours | **60.0% ↓** | Enhanced patient experience |
-| **😤 System Nervousness** | 2,748,125 changes | 824,437 changes | **70.0% ↓** | Improved plan stability |
-| **📈 Patient Throughput** | 1,245 patients | 1,876 patients | **50.7% ↑** | Higher capacity utilization |
-| **🎯 Resource Utilization** | 67% | 89% | **32.8% ↑** | Better resource efficiency |
-| **🚨 Emergency Response Time** | 8.5 hours | 3.2 hours | **62.4% ↓** | Critical care improvement |
-| **💰 Cost Efficiency** | Baseline | +2.5% cost | **97.5% value** | Massive gains for minimal cost |
+| **Performance Metric**                  | **Baseline**               | **Ultimate Planner**      | **Improvement** | **Impact**                              |
+| --------------------------------------- | -------------------------- | ------------------------- | --------------- | --------------------------------------- |
+| **⏱️ Waiting Time for Admission (WTA)** | 287,190 ± 1,995 units      | 238,646 ± 2,115 units     | **16.9% ↓**     | Faster patient access                   |
+| **🏥 Waiting Time in Hospital (WTH)**   | 4,619,613 ± 496,235 units  | 4,413,900 ± 595,002 units | **4.45% ↓**     | Enhanced patient experience             |
+| **😤 System Nervousness**               | 2,946,477 ± 14,578 changes | 38,640 ± 4,533 changes    | **98.69% ↓**    | Near-zero plan changes, high stability  |
+| **📈 Patient Throughput**               | 9,404 ± 70 patients        | 15,750 ± 67 patients      | **67.5% ↑**     | Higher capacity utilization             |
+| **💰 Total Cost**                       | €733,402 ± 96              | €770,997 ± 41             | **5.13% ↑**     | Major performance gains for modest cost |
+
 
 ### Algorithm Performance Benchmarks
 
@@ -139,4 +138,5 @@ result = simulator.run(365 * 24)  # 365 days
 - **Technology Stack**: Python 3.11, NumPy, Pandas, Matplotlib, scikit-learn
 - **Optimization Algorithms**: Genetic Algorithm, Simulated Annealing, Heuristics
 - **Performance**: 60-70% improvement across key metrics
+
 
