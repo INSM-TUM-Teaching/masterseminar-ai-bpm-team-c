@@ -307,43 +307,77 @@ class UltimateOptimizationPlanner(OptimizedPlanner):
                 del self.patient_start_times[case_id]
             self.long_stay_patients.discard(case_id)
 
-    def plan(self, unplanned_patients, planned_but_modifiable_patients, simulation_time):
-        """
-        SIMPLIFIED PLANNING - Basic patient admission scheduling
-        
+    def plan(self, unplanned_patients, planned_but_modifiable_patients=None, simulation_time=None):
+        """    
         Competition Compliant Parameters:
         - unplanned_patients: New patients to assign admission times
         - planned_but_modifiable_patients: Previously planned patients that can be rescheduled  
         - simulation_time: Current simulation time
         
         Returns: List of tuples (patient_id, admit_time) with admit_time ≥ simulation_time + 24
-        
-        Simple Strategy: Basic admission time assignment with 24+ hour rule compliance
+        UltimateOptimizationPlanner.plan
         """
         
-        # COMPETITION COMPLIANCE: Combine unplanned and modifiable patients
-        all_patients = list(unplanned_patients)
-        
-        # Track plan changes for nervousness monitoring  
-        if planned_but_modifiable_patients:
-            self.plan_changes += len(planned_but_modifiable_patients)
-            # Note: For nervousness reduction, we don't replan modifiable patients
-        
-        if not all_patients:
+        # Normalize arguments for both calling conventions
+        if simulation_time is None:
+            plannable_elements = unplanned_patients if isinstance(unplanned_patients, dict) else {}
+            simulation_time = planned_but_modifiable_patients if isinstance(planned_but_modifiable_patients, (int, float)) else 0
+            planned_but_modifiable = []
+        else:
+            plannable_elements = {}
+            for c in (unplanned_patients or []):
+                cid = c.case_id if hasattr(c, 'case_id') else c
+                plannable_elements[cid] = ['admission']
+            planned_but_modifiable = list(planned_but_modifiable_patients or [])
+
+        if not plannable_elements:
+            self.algorithm_calls['plan'] = self.algorithm_calls.get('plan', 0) + 1
             return []
-        
-        # Simple planning without strategies - direct processing
-        planned_cases = []
-        
-        # Process all patients with basic planning
-        for patient in all_patients:
-            # Basic admission time calculation (24+ hour rule compliant)
-            admit_time = simulation_time + self.min_planning_horizon
-            planned_cases.append((patient.case_id if hasattr(patient, 'case_id') else patient, admit_time))
-        
-        # Record planning decision
-        self.planning_decisions.append(len(planned_cases))
-        return planned_cases
+
+        cases = list(plannable_elements.keys())
+        planned = []
+
+        if planned_but_modifiable:
+            self.plan_changes += len(planned_but_modifiable)
+
+        self.algorithm_calls['plan'] = self.algorithm_calls.get('plan', 0) + 1
+
+        # Use GA when workload justifies it (and batch if necessary)
+        if len(cases) >= self.ga_threshold and hasattr(self, 'genetic_optimizer'):
+            for i in range(0, len(cases), self.max_patients_per_ga_batch):
+                batch = cases[i:i + self.max_patients_per_ga_batch]
+                emergency_in_batch = set(batch) & set(self.emergency_patients)
+                try:
+                    ga_schedule = self.genetic_optimizer.optimize_admission_schedule(batch, simulation_time, emergency_in_batch)
+                except Exception:
+                    # Fallback to heuristic if GA fails
+                    ga_schedule = [(case_id, 'admission', simulation_time + self.min_planning_horizon + random.uniform(0, 12)) for case_id in batch]
+
+                # Normalize GA output and enforce min horizon
+                for entry in ga_schedule:
+                    case_id = entry[0]
+                    label = entry[1] if len(entry) > 1 else 'admission'
+                    ts = entry[2] if len(entry) > 2 else (simulation_time + self.min_planning_horizon)
+                    ts = max(ts, simulation_time + self.min_planning_horizon)
+                    planned.append((case_id, label, ts))
+        else:
+            # Heuristic: spread admissions across next working window while respecting min horizon
+            for case_id in cases:
+                admit_time = simulation_time + self.min_planning_horizon + random.uniform(0, 12)
+                planned.append((case_id, 'admission', admit_time))
+
+        self.planning_decisions.append(len(planned))
+
+        normalized = []
+        for p in planned:
+            if len(p) >= 3:
+                normalized.append((p[0], p[2]))
+            elif len(p) == 2:
+                normalized.append((p[0], p[1]))
+            else:
+                normalized.append((p[0], simulation_time + self.min_planning_horizon))
+
+        return normalized
     
     def schedule(self, simulation_time):
         """
